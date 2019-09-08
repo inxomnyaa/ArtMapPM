@@ -17,7 +17,10 @@ class Loader extends PluginBase
 
     public function onEnable()
     {
-        ItemFactory::registerItem(new Easel());
+        try {
+            ItemFactory::registerItem(new Easel());
+        } catch (\RuntimeException $exception) {
+        }
         Entity::registerEntity(EaselEntity::class);
         Item::initCreativeItems();
 
