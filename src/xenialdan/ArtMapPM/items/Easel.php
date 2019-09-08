@@ -24,32 +24,27 @@ declare(strict_types=1);
 namespace xenialdan\ArtMapPM\items;
 
 use pocketmine\block\Block;
-use pocketmine\entity\Entity;
 use pocketmine\item\Item;
-use pocketmine\level\Level;
 use pocketmine\level\Location;
 use pocketmine\math\Vector3;
-use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\nbt\tag\DoubleTag;
-use pocketmine\nbt\tag\FloatTag;
-use pocketmine\nbt\tag\ListTag;
 use pocketmine\Player;
-use pocketmine\Server;
-use pocketmine\tile\ItemFrame;
 use xenialdan\ArtMapPM\EaselPart;
-use xenialdan\ArtMapPM\entities\Easel as EaselEntity;
 
-class Easel extends Item{
-	public function __construct($meta = 0){
-		parent::__construct(self::ARMOR_STAND, $meta, "ArtMap Easel");
-	}
+class Easel extends Item
+{
+    public function __construct($meta = 0)
+    {
+        parent::__construct(self::ARMOR_STAND, $meta, "ArtMap Easel");
+    }
 
-	public function canBeActivated(){
-		return true;
-	}
+    public function canBeActivated()
+    {
+        return true;
+    }
 
-	public function onActivate(Level $level, Player $player, Block $block, Block $target, int $face, Vector3 $facepos): bool{
-		EaselPart::spawn(new Location($block->getX(), $block->getY() + 1.4, $block->getZ(), $player->getYaw(), $player->getPitch(), $level), EaselPart::getFacing($player));
-		return true;
-	}
+    public function onActivate(Player $player, Block $blockReplace, Block $blockClicked, int $face, Vector3 $clickVector): bool
+    {
+        EaselPart::spawn(new Location($blockClicked->getX(), $blockClicked->getY() + 1.4, $blockClicked->getZ(), $player->getYaw(), $player->getPitch(), $blockClicked->getLevel()), EaselPart::getFacing($player));
+        return true;
+    }
 }
