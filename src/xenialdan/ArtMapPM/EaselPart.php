@@ -27,7 +27,6 @@ use pocketmine\level\Level;
 use pocketmine\level\Location;
 use pocketmine\network\mcpe\protocol\ClientboundMapItemDataPacket;
 use pocketmine\Player;
-use pocketmine\Server;
 use pocketmine\tile\ItemFrame;
 use pocketmine\tile\ItemFrame as TileItemFrame;
 use pocketmine\tile\Sign;
@@ -37,19 +36,25 @@ use xenialdan\ArtMapPM\entities\Easel;
 use xenialdan\MapAPI\API;
 use xenialdan\MapAPI\item\Map;
 
+/**
+ * Represents a part of an easel object
+ */
 class EaselPart
 {
-
-    /**
-     * Represents a part of an easel object
-     */
 
     public static $ARBITRARY_SIGN_ID = "*{=}*";
     private static $EASEL_ID = "Easel";
 
     private static $modifier = 0.65;
-    private static $heightOffset = -1.4;
+    private static $heightOffset = -1;
 
+    /**
+     * @param Location $easelLocation
+     * @param int $facing
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @throws \InvalidStateException
+     */
     public static function spawn(Location $easelLocation, int $facing)
     {
         $sign = Block::get(Block::WALL_SIGN, $dump = self::getSignFacing($facing));
@@ -66,7 +71,7 @@ class EaselPart
         /** @var ItemFrame $tile */
         $tile = Tile::createTile(Tile::ITEM_FRAME, $easelLocation->getLevel(), TileItemFrame::createNBT($easelLocation->floor()));
         /* Fake map */
-        $map = API::importFromPNG('empty', 32);
+        $map = API::importFromPNG('empty', 128);
         if ($map instanceof Map) {
             $tile->setItem($map);
         }
@@ -75,21 +80,26 @@ class EaselPart
 
         $partPos = self::getPartPos($easelLocation, $facing);
         /** @var Easel $stand */
-        $stand = new Easel($easelLocation->getLevel(), Entity::createBaseNBT($partPos, null, $partPos->getYaw()));
+        $stand = new Easel($easelLocation->getLevel(), Easel::createBaseNBT($partPos, null, $partPos->getYaw()));
         if ($stand instanceof Easel) {
-            $easelLocation->getLevel()->addEntity($stand);
-            $stand->spawnToAll();
             $stand->setBasePlate(false);
             $stand->setCustomNameVisible(true);
             $stand->setCustomName(self::$EASEL_ID);
             $stand->setGravity(false);
             $stand->setArms(false);
-            $stand->setHealth(1);
-            $stand->setDataFlag(Entity::DATA_FLAGS, Entity::DATA_FLAG_TAMED);
-            $stand->setDataFlag(Entity::DATA_FLAGS, Entity::DATA_FLAG_SADDLED);
+            $stand->setGenericFlag(Entity::DATA_FLAG_TAMED, true);
+            $stand->setGenericFlag(Entity::DATA_FLAG_SADDLED, true);
+            $stand->getDataPropertyManager()->setByte(Entity::DATA_RIDER_ROTATION_LOCKED, 1);
+            $stand->getDataPropertyManager()->setFloat(Entity::DATA_RIDER_MIN_ROTATION, self::getYawOffset($facing));
+            $stand->getDataPropertyManager()->setFloat(Entity::DATA_RIDER_MAX_ROTATION, self::getYawOffset($facing));
+            $stand->spawnToAll();
         }
     }
 
+    /**
+     * @param Player $player
+     * @return mixed
+     */
     public static function getFacing(Player $player)
     {
         $faces = [
@@ -98,7 +108,6 @@ class EaselPart
             2 => 2,
             3 => 0
         ];
-        Server::getInstance()->broadcastMessage(__LINE__ . "|" . $faces[$player->getDirection()]);
         return $faces[$player->getDirection()];
     }
 
@@ -118,7 +127,7 @@ class EaselPart
         $faces = [
             0 => 2,
             1 => 3,
-            2 => 5,
+            2 => 4,
             3 => 1
         ];
         return $faces[$facing];
@@ -144,7 +153,7 @@ class EaselPart
         return 0;
     }
 
-    private static function getOffset(Level $world, int $facing): Location
+    public static function getOffset(Level $world, int $facing): Location
     {
         $x = 0;
         $z = 0;

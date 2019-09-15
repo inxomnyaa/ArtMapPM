@@ -1,7 +1,7 @@
 ---
 name: ArtMapPM
 main: xenialdan\ArtMapPM\Loader
-version: 0.0.1
+version: 0.1.0
 api: 3.9
 load: POSTWORLD
 authors:

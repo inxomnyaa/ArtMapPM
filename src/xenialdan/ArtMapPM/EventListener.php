@@ -2,10 +2,10 @@
 
 namespace xenialdan\ArtMapPM;
 
-use pocketmine\block\Air;
 use pocketmine\entity\Entity;
 use pocketmine\event\Listener;
 use pocketmine\event\server\DataPacketReceiveEvent;
+use pocketmine\item\ItemIds;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\InteractPacket;
 use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
@@ -17,6 +17,7 @@ use pocketmine\plugin\Plugin;
 use pocketmine\Server;
 use pocketmine\tile\ItemFrame as TileitemFrame;
 use pocketmine\utils\Color;
+use xenialdan\ArtMapPM\entities\Easel;
 use xenialdan\MapAPI\item\Map;
 
 class EventListener implements Listener
@@ -33,6 +34,11 @@ class EventListener implements Listener
         $this->owner = $plugin;
     }
 
+    /**
+     * @param DataPacketReceiveEvent $event
+     * @throws \BadMethodCallException
+     * @throws \RuntimeException
+     */
     public function onDataPacket(DataPacketReceiveEvent $event)
     {
         if ($event->getPacket() instanceof InventoryTransactionPacket) {
@@ -43,8 +49,9 @@ class EventListener implements Listener
         }
         /** @var PlayerInputPacket $packet */
         if (($packet = $event->getPacket()) instanceof PlayerInputPacket) {
-            if ($packet->motionX == 0 && $packet->motionY == 0)
+            if ($packet->motionX == 0 && $packet->motionY == 0) {
                 $event->setCancelled(true);
+            }
         }
     }
 
@@ -54,10 +61,10 @@ class EventListener implements Listener
      * @param InteractPacket $packet
      * @param Player $player
      * @return bool
+     * @throws \RuntimeException
      */
     public function handleInteract(InteractPacket $packet, Player $player): bool
     {
-        var_dump($packet);
         switch ($packet->action) {
             case InteractPacket::ACTION_LEAVE_VEHICLE:
                 if ($this->isRiding($player)) {
@@ -76,6 +83,8 @@ class EventListener implements Listener
      * @param InventoryTransactionPacket $packet
      * @param Player $player
      * @return bool
+     * @throws \RuntimeException
+     * @throws \RuntimeException
      */
     public function handleInventoryTransaction(InventoryTransactionPacket $packet, Player $player): bool
     {
@@ -104,7 +113,8 @@ class EventListener implements Listener
                     switch ($type) {
                         case InventoryTransactionPacket::USE_ITEM_ACTION_CLICK_BLOCK:
                             {
-                                if ($player->getInventory()->getItemInHand() instanceof Air && $this->isRiding($player)) {
+                                //TODO dye colors
+                                if (in_array($player->getInventory()->getItemInHand()->getId(), [ItemIds::AIR, ItemIds::DYE]) && $this->isRiding($player)) {
                                     /** @var Vector3 $clickpos */
                                     $clickpos = $packet->trData->clickPos;
                                     /** @var TileItemFrame $tile */
@@ -116,7 +126,34 @@ class EventListener implements Listener
                                             $map = Loader::getMapUtils()->getCachedMap($item->getMapId());
                                             $height = $item->getHeight();
                                             $width = $item->getWidth();
-                                            $map->setColorAt(new Color(mt_rand(0, 255), mt_rand(0, 255), mt_rand(0, 255)), floor($height * $clickpos->z), floor($width * $clickpos->y));//TODO fix based on rotation
+                                            $y = floor($height - $height * $clickpos->y);
+                                            /** @var Easel $easel */
+                                            $easel = Server::getInstance()->findEntity(self::getLINK($player)->fromEntityUniqueId, $player->getLevel());
+                                            switch ($easel->getDirection()) {
+                                                case Vector3::SIDE_NORTH - 2:
+                                                    {
+                                                        $x = floor($width - $width * $clickpos->z);
+                                                        break;
+                                                    }
+                                                case Vector3::SIDE_EAST - 2:
+                                                    {
+                                                        $x = floor($width - $width * $clickpos->x);
+                                                        break;
+                                                    }
+                                                case Vector3::SIDE_SOUTH - 2:
+                                                    {
+                                                        $x = floor($width * $clickpos->x);
+                                                        break;
+                                                    }
+                                                case Vector3::SIDE_WEST - 2:
+                                                    {
+                                                        $x = floor($width * $clickpos->z);
+                                                        break;
+                                                    }
+                                                default:
+                                                    $x = 0;
+                                            }
+                                            $map->setColorAt(new Color(mt_rand(0, 255), mt_rand(0, 255), mt_rand(0, 255)), $x, $y);
                                         }
                                         return true;
                                     }
